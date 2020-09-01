@@ -1,0 +1,13 @@
+-r ./requirements.txt
+
+jinja2
+sphinx
+sphinx_rtd_theme
+sphinxcontrib-bibtex
+
+# Required for pyrvt on RTFD
+pyexcel
+pyexcel-io
+pyexcel-ods
+pyexcel-xls
+pyexcel-xlsx
