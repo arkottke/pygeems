@@ -8,7 +8,7 @@ with open("README.md") as fp:
 
 setup(
     name="pygeems",
-    version="0.1.0",
+    version="0.2.0",
     packages=find_packages(exclude=[".*tests.*"]),
     test_suite="tests",
     author="Albert Kottke",
