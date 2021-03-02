@@ -3,18 +3,46 @@ import numpy as np
 from . import FPATH_DATA
 from .utils import check_bounds, check_options, dist_lognorm
 
+from typing import Optional
+from numpy.typing import ArrayLike
 
-def calc_damping_scaling_rea15(damping, mag, dist_rup, comp="rotd50", periods=None):
-    """Compute the damping scaling proposed by Rezaeian et al. (2014)."""
+_CACHE_REA15 = {}
+
+
+def calc_damping_scaling_rea15(
+    damping: float,
+    mag: float,
+    dist_rup: float,
+    comp: str = "rotd50",
+    periods: Optional[ArrayLike] = None,
+) -> ArrayLike:
+    """Compute the damping scaling proposed by Rezaeian et al. (2014).
+
+    Parameters
+    ----------
+    damping: damping ratio of the oscillator in percent (2 for 2%)
+    mag: earthquake magnitude
+    dist_rup: closest distance to the rupture in [km]
+    comp: component, can be either: 'rotd50' or 'roti50'
+    periods: *optional* periods to provide values.
+
+    Returns
+    -------
+    ret : np.rec.array
+        Array with columns period, damping scaling factor, and natural logarithmic standard deviation.
+    """
     assert 0.5 <= damping <= 30
     assert comp in ["rotd50", "roti50"]
 
-    C = np.genfromtxt(
-        FPATH_DATA / f"rezaeian_et_al_2014-{comp}.csv",
-        delimiter=",",
-        skip_header=1,
-        names=True,
-    ).view(np.recarray)
+    # Only load the coefficients once
+    if comp not in _CACHE_REA15:
+        _CACHE_REA15[comp] = np.genfromtxt(
+            FPATH_DATA / f"rezaeian_et_al_2014-{comp}.csv",
+            delimiter=",",
+            skip_header=1,
+            names=True,
+        ).view(np.recarray)
+    C = _CACHE_REA15[comp]
 
     ln_damp = np.log(damping)
     ln_dsf = (
@@ -41,7 +69,14 @@ def calc_damping_scaling_rea15(damping, mag, dist_rup, comp="rotd50", periods=No
 
 
 @dist_lognorm
-def calc_period_rea05(kind, mag, dist_rup, site_class="c", directivity=False, **kwargs):
+def calc_period_rea05(
+    kind: str,
+    mag: float,
+    dist_rup: float,
+    site_class: str = "c",
+    directivity: bool = False,
+    **kwargs,
+):
     # Model coefficients from Table 2
     C = {
         model: np.rec.fromrecords(values, names="c1,c2,c3,c4,c5,c6")
@@ -96,14 +131,14 @@ def calc_period_rea05(kind, mag, dist_rup, site_class="c", directivity=False, **
 
 @dist_lognorm
 def calc_aris_intensity_aea16(
-    mag,
-    v_s30,
-    pga,
-    psa_1s,
-    hanging_wall=False,
-    dist_jb=None,
-    ln_std_pga=None,
-    ln_std_psa_1s=None,
+    mag: float,
+    v_s30: float,
+    pga: float,
+    psa_1s: float,
+    hanging_wall: bool = False,
+    dist_jb: Optional[float] = None,
+    ln_std_pga: Optional[float] = None,
+    ln_std_psa_1s: Optional[float] = None,
     **kwargs,
 ):
     # From Table 3.1
