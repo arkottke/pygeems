@@ -4,14 +4,26 @@ import numpy as np
 import numba
 import scipy.constants
 
+from typing import Optional, Union
+
+from numpy.typing import ArrayLike
+
 from scipy.integrate import cumtrapz
 from scipy.stats import norm
 
 from .utils import dist_lognorm
 
+FloatOrArrayLike = Union[float, ArrayLike]
+
 
 @dist_lognorm
-def calc_disp_rs08(yield_coef, pga, mag=None, pgv=None, **kwargs):
+def calc_disp_rs08(
+    yield_coef: float,
+    pga: FloatOrArrayLike,
+    mag: Optional[float] = None,
+    pgv: Optional[float] = None,
+    **kwargs
+):
     if mag is None:
         method = "pgv"
     elif pgv is None:
@@ -54,7 +66,13 @@ def calc_disp_rs08(yield_coef, pga, mag=None, pgv=None, **kwargs):
 
 @dist_lognorm
 def calc_disp_ra11(
-    yield_coef, pga, period_slide, period_mean, mag=None, pgv=None, **kwargs
+    yield_coef: float,
+    pga: FloatOrArrayLike,
+    period_slide: float,
+    period_mean: float,
+    mag: Optional[float] = None,
+    pgv: Optional[float] = None,
+    **kwargs
 ):
     if mag is None:
         method = "pgv"
@@ -106,7 +124,7 @@ def _calc_wla06_ln_a_rms(pga):
     return -1.167 + 1.02 * np.log(pga)
 
 
-def _calc_wla06_ln_dur_key(yield_coef, pga, psa_1s, mag):
+def _calc_wla06_ln_dur_key(yield_coef: float, pga: float, psa_1s: float, mag: float):
     # Simplification
     ln_pga = np.log(pga)
     ln_pga_ky = np.log(pga / yield_coef)
@@ -123,7 +141,7 @@ def _calc_wla06_ln_dur_key(yield_coef, pga, psa_1s, mag):
 
 
 @dist_lognorm
-def calc_disp_wla06(yield_coef, pga, psa_1s, mag, **kwds):
+def calc_disp_wla06(yield_coef: float, pga: float, psa_1s: float, mag: float, **kwds):
     # Constants from Table 1.
     # Updated values were provided by Jennie
     a1 = 5.463
@@ -143,6 +161,7 @@ def calc_disp_wla06(yield_coef, pga, psa_1s, mag, **kwds):
     ln_dur_ky = _calc_wla06_ln_dur_key(yield_coef, pga, psa_1s, mag)
     ln_a_rms = _calc_wla06_ln_a_rms(pga)
 
+    pga = np.asarray(pga)
     ln_pga_ky = np.log(pga / yield_coef)
     ln_psa_pga = np.log(psa_1s / pga)
 
@@ -158,7 +177,12 @@ def calc_disp_wla06(yield_coef, pga, psa_1s, mag, **kwds):
         + 1 / (f1 * (ln_pga_ky + f2))
     )
     # Equation not valid for PGA values less than the yield coef
-    ln_mean[pga < yield_coef] = np.nan
+    try:
+        ln_mean[pga < yield_coef] = np.nan
+    except TypeError:
+        if ln_mean < yield_coef:
+            ln_mean = np.nan
+
     # From Figure 5
     ln_std = 0.53
 
@@ -166,7 +190,7 @@ def calc_disp_wla06(yield_coef, pga, psa_1s, mag, **kwds):
 
 
 @dist_lognorm
-def calc_disp_bt07(yield_coef, period_slide, psa_dts, **kwds):
+def calc_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwds):
     # Simplification
     ln_yield_coef = np.log(yield_coef)
     ln_psa_dts = np.log(psa_dts)
@@ -186,7 +210,7 @@ def calc_disp_bt07(yield_coef, period_slide, psa_dts, **kwds):
     return ln_mean, ln_std
 
 
-def calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, **kwds):
+def calc_prob_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwds):
     # Probability of a non-zero displacement
     # Modified from Equation (3)
     ln_yield_coef = np.log(yield_coef)
@@ -202,7 +226,7 @@ def calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, **kwds):
 
 
 @numba.jit
-def _calc_block_velocity(time_step, accels, yield_coef):
+def _calc_block_velocity(time_step: float, accels: ArrayLike, yield_coef: float):
     """Compute the velocity of a sliding block.
 
     The calculation is adapted from Slammer's source code[1]_. However,
@@ -248,7 +272,9 @@ def _calc_block_velocity(time_step, accels, yield_coef):
     return vels
 
 
-def calc_rigid_disp(time_step, accels, yield_coef, invert=False):
+def calc_rigid_disp(
+    time_step: float, accels: ArrayLike, yield_coef: float, invert: bool = False
+):
     """Compute the displacement and velocity of a rigid sliding mass.
 
     Parameters
