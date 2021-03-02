@@ -3,6 +3,10 @@
 
 from pkg_resources import get_distribution
 
+import pathlib
+
+FPATH_DATA = pathlib.Path(__file__).parent / 'data'
+
 from . import ground_motion
 from . import slope_disp
 

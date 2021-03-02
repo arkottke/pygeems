@@ -1,7 +1,41 @@
 
 import numpy as np
 
+from . import FPATH_DATA
 from .utils import check_bounds, check_options, dist_lognorm
+
+
+def calc_damping_scaling_rea15(damping, mag, dist_rup, comp='rotd50', periods=None):
+    """Compute the damping scaling proposed by Rezaeian et al. (2014)."""
+    assert 0.5 <= damping <= 30
+    assert comp in ['rotd50', 'roti50']
+
+    C = np.genfromtxt(
+        FPATH_DATA / f'rezaeian_et_al_2014-{comp}.csv',
+        delimiter=',', skip_header=1, names=True
+    ).view(np.recarray)
+
+    ln_damp = np.log(damping)
+    ln_dsf = (
+            C.b0 + C.b1 * ln_damp + C.b2 * ln_damp ** 2 +
+            (C.b3 + C.b4 * ln_damp + C.b5 * ln_damp ** 2) * mag +
+            (C.b6 + C.b7 * ln_damp + C.b8 * ln_damp ** 2) * np.log(dist_rup + 1)
+    )
+    ln_damp_5 = np.log(damping / 5)
+    ln_std = np.abs(C.a0 * ln_damp_5 + C.a1 * ln_damp_5 ** 2)
+
+    if periods:
+        # Interpolate over the provided periods
+        ln_dsf = np.interp(np.log(periods), np.log(C.period), ln_dsf)
+        ln_std = np.interp(np.log(periods), np.log(C.period), ln_std)
+    else:
+        periods = C.period
+
+    ret = np.rec.fromarrays(
+        [periods, np.exp(ln_dsf), ln_std],
+        names='period,dsf,ln_std'
+    )
+    return ret
 
 
 @dist_lognorm
