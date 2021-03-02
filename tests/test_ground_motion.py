@@ -1,8 +1,11 @@
+import json
 import pytest
 
 import pygeems
 
 from numpy.testing import assert_allclose
+
+from . import FPATH_DATA
 
 
 @pytest.mark.parametrize(
@@ -19,3 +22,15 @@ def test_calc_period_rea05(kind, mag, dist_rup, site_class, directivity, expecte
         kind, mag, dist_rup, site_class, directivity
     )
     assert_allclose(actual, expected, rtol=0.01)
+
+
+@pytest.mark.parametrize(
+    "case", json.load(open(FPATH_DATA / "rezaeian_et_al-2014.json"))
+)
+def test_calc_damping_scaling_rea15(case):
+    ret = pygeems.ground_motion.calc_damping_scaling_rea15(
+        case["damping"], case["mag"], case["dist_rup"], comp=case["comp"]
+    )
+
+    assert_allclose(ret.dsf, case["dsf"], rtol=0.01)
+    assert_allclose(ret.ln_std, case["ln_std"], rtol=0.01)
