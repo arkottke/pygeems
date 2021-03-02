@@ -1,26 +1,24 @@
 import numpy as np
 
-from . import (PRESS_ATM)
+from . import PRESS_ATM
 
 
 def calc_mod_shear_ws18(
-        stress_mean_eff,
-        fines,
-        plas_index=None,
-        over_consol_ratio=1.,
-        unif_coef=None,
-        diam_mean=None,
-        water_content=None,
-        void_ratio=None):
+    stress_mean_eff,
+    fines,
+    plas_index=None,
+    over_consol_ratio=1.0,
+    unif_coef=None,
+    diam_mean=None,
+    water_content=None,
+    void_ratio=None,
+):
     """Compute the shear modulus based on Wang & Stokoe model."""
 
     if fines <= 0.12:
         # Clean sands and gravels
         c_g = 63.9e3
-        f_g = (
-            unif_coef ** -0.21 *
-            void_ratio ** (-1.12 - (0.09 * diam_mean) ** 0.54)
-        )
+        f_g = unif_coef ** -0.21 * void_ratio ** (-1.12 - (0.09 * diam_mean) ** 0.54)
         stress_exp = 0.48 * unif_coef ** 0.08 - 1.03 * fines
     elif fines > 0.12 and plas_index is None:
         c_g = 84.8e3
@@ -29,9 +27,9 @@ def calc_mod_shear_ws18(
     elif fines > 0.12 and plas_index > 0:
         c_g = 232.9e3
         f_g = (
-            (1 + 0.96 * void_ratio) ** -2.42 *
-            (1.92 + over_consol_ratio) ** (0.27 + 0.46 * plas_index) *
-            (1 - 0.44 * fines)
+            (1 + 0.96 * void_ratio) ** -2.42
+            * (1.92 + over_consol_ratio) ** (0.27 + 0.46 * plas_index)
+            * (1 - 0.44 * fines)
         )
         stress_exp = 0.49
     else:
@@ -63,44 +61,44 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
         Shear-wave velocity (m/s)
     """
     C = {
-        'fine_grained': {
-            'coeffs': (26, 0.17, 0.32),
-            'asf': {
-                'holocene': 0.88,
-                'pleistocene': 1.12,
-            }
+        "fine_grained": {
+            "coeffs": (26, 0.17, 0.32),
+            "asf": {
+                "holocene": 0.88,
+                "pleistocene": 1.12,
+            },
         },
-        'sand': {
-            'coeffs': (30, 0.23, 0.23),
-            'asf': {
-                'holocene': 0.90,
-                'pleistocene': 1.17,
-            }
+        "sand": {
+            "coeffs": (30, 0.23, 0.23),
+            "asf": {
+                "holocene": 0.90,
+                "pleistocene": 1.17,
+            },
         },
-        'gravel': {
-            'coeffs': (78, 0.19, 0.18),
-            'asf': {
-                'holocene': 53 / 78,
-                'pleistocene': 115 / 78,
-            }
+        "gravel": {
+            "coeffs": (78, 0.19, 0.18),
+            "asf": {
+                "holocene": 53 / 78,
+                "pleistocene": 115 / 78,
+            },
         },
-        'all': {
-            'coeffs': (30, 0.215, 0.275),
-            'asf': {
-                'holocene': 0.87,
-                'pleistocene': 1.13,
-            }
+        "all": {
+            "coeffs": (30, 0.215, 0.275),
+            "asf": {
+                "holocene": 0.87,
+                "pleistocene": 1.13,
+            },
         },
     }
 
     # Convert to kPa
     stress_vert_eff = stress_vert_eff * PRESS_ATM
 
-    coeff, pow_blows, pow_stress = C[soil_type]['coeffs']
+    coeff, pow_blows, pow_stress = C[soil_type]["coeffs"]
     vel_shear = coeff * blows ** pow_blows * stress_vert_eff ** pow_stress
 
     if age is not None:
-        asf = C[soil_type]['asf'][age]
+        asf = C[soil_type]["asf"][age]
         vel_shear *= asf
 
     return vel_shear
