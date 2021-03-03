@@ -5,6 +5,8 @@ import pytest
 
 import pygeems
 
+from numpy.testing import assert_allclose
+
 
 FPATH_DATA = pathlib.Path(__file__).parent / "data"
 
@@ -26,7 +28,7 @@ FPATH_DATA = pathlib.Path(__file__).parent / "data"
 def test_calc_disp_rs08(yield_coef, pga, mag, pgv, expected):
     disp = pygeems.slope_disp.calc_disp_rs08(yield_coef, pga, mag=mag, pgv=pgv)
     # Compare to 2 cm of displacement
-    np.testing.assert_allclose(disp, expected, atol=2)
+    assert_allclose(disp, expected, atol=2)
 
 
 @pytest.mark.parametrize(
@@ -48,22 +50,22 @@ def test_calc_disp_ra11(yield_coef, pga, period_slide, period_mean, mag, pgv, ex
     disp = pygeems.slope_disp.calc_disp_ra11(
         yield_coef, pga, period_slide, period_mean, mag=mag, pgv=pgv
     )
-    np.testing.assert_allclose(disp, expected, atol=1)
+    assert_allclose(disp, expected, atol=1)
 
 
 def test_calc_wla06_ln_a_rms():
     a_rms = np.exp(pygeems.slope_disp._calc_wla06_ln_a_rms(0.35))
-    np.testing.assert_allclose(a_rms, 0.1067, atol=0.0001)
+    assert_allclose(a_rms, 0.1067, atol=0.0001)
 
 
 def test_calc_wla06_ln_dur_key():
     dur_ky = np.exp(pygeems.slope_disp._calc_wla06_ln_dur_key(0.11, 0.35, 0.18, 6.5))
-    np.testing.assert_allclose(dur_ky, 0.5896, atol=0.0001)
+    assert_allclose(dur_ky, 0.5896, atol=0.0001)
 
 
 def test_calc_disp_wla06():
     median = pygeems.slope_disp.calc_disp_wla06(0.11, 0.35, 0.18, 6.5)
-    np.testing.assert_allclose(median, 3.001, atol=0.001)
+    assert_allclose(median, 3.001, atol=0.001)
 
 
 # Test values from Table 1 in BT07
@@ -80,7 +82,7 @@ def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
     expected = 1 - expected
 
     calc = pygeems.slope_disp.calc_prob_disp_bt07(yield_coef, period_slide, psa_dts)
-    np.testing.assert_allclose(calc, expected, atol=0.02, rtol=0.02)
+    assert_allclose(calc, expected, atol=0.02, rtol=0.02)
 
 
 # Test values from Table 1 in BT07. Authors provided a range of values, which are
@@ -94,7 +96,7 @@ def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
 )
 def test_calc_disp_bt07(yield_coef, period_slide, psa_dts, expected):
     median = pygeems.slope_disp.calc_disp_bt07(yield_coef, period_slide, psa_dts)
-    np.testing.assert_allclose(median, expected, rtol=0.10)
+    assert_allclose(median, expected, rtol=0.10)
 
 
 @pytest.mark.parametrize(
@@ -117,4 +119,35 @@ def test_calc_block_displacement(invert, yield_coef, expected):
     )
     disp_max = disps[-1]
     # Large rtol because of slightly different implementations
-    np.testing.assert_allclose(disp_max, expected, rtol=0.04)
+    assert_allclose(disp_max, expected, rtol=0.04)
+
+
+# Test values from Table 2 of Bray et al. (2018). Coastline slope and Nishigo dam
+@pytest.mark.parametrize(
+    "yield_coef,period_slide,psa_dts,mag,expected",
+    [
+        (0.10, 0.6, 0.25, 8.0, np.sqrt(3 * 12)),
+        (0.26, 0.15, 1.51, 9.0, np.sqrt(14 * 58)),
+    ],
+)
+def test_calc_disp_bea18(yield_coef, period_slide, psa_dts, mag, expected):
+    ret = pygeems.slope_disp.calc_disp_bea18(
+        yield_coef, period_slide, psa_dts, mag, stats=False
+    )
+    # Limited number of digits in table make testing difficult
+    assert_allclose(ret, expected, rtol=0.50)
+
+
+# Test values from Table 2 of Bray et al. (2018). Esperanza and Tutuven dams.
+@pytest.mark.parametrize(
+    "yield_coef,period_slide,psa_dts,expected",
+    [
+        (0.24, 0.40, 0.43, 0.50),
+        (0.39, 0.15, 0.75, 0.60),
+    ],
+)
+def test_calc_prob_disp_bea18(yield_coef, period_slide, psa_dts, expected):
+    ret = pygeems.slope_disp.calc_prob_disp_bea18(yield_coef, period_slide, psa_dts)
+    # Reported values are probability of no displacement
+    # Limited number of digits in table make testing difficult
+    assert_allclose(ret, 1 - expected, rtol=0.25)

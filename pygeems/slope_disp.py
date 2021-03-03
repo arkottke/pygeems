@@ -24,6 +24,30 @@ def calc_disp_rs08(
     pgv: Optional[float] = None,
     **kwargs
 ):
+    """Rathje and Saygili (2008) slope displacement model.
+
+    Parameters
+    ----------
+    yield_coef : float
+        Slope yield coefficient
+    pga : float or `array_like`
+        Peak ground acceleration in [gravity]
+    mag : float
+        Earthquake magnitude
+    pgv : float
+        Peak ground velocity in [cm/s]
+    stats : bool, default=False
+        If a distribution should be returned
+
+    Returns
+    -------
+    median : float or `numpy.ndarray`
+        Median value. If `stats` is False.
+    ln_mean : float or `numpy.ndarray`
+        Natural log mean value. Returned if `stats` is True.
+    ln_std : float or `numpy.ndarray`
+        Natural log standard deviation. Returned if `stats` is True.
+    """
     if mag is None:
         method = "pgv"
     elif pgv is None:
@@ -74,6 +98,7 @@ def calc_disp_ra11(
     pgv: Optional[float] = None,
     **kwargs
 ):
+    """Rathje and Antanakos (2011) slope displacement model."""
     if mag is None:
         method = "pgv"
     elif pgv is None:
@@ -191,6 +216,7 @@ def calc_disp_wla06(yield_coef: float, pga: float, psa_1s: float, mag: float, **
 
 @dist_lognorm
 def calc_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwds):
+    """Bray and Travasarou (2007)."""
     # Simplification
     ln_yield_coef = np.log(yield_coef)
     ln_psa_dts = np.log(psa_dts)
@@ -222,6 +248,64 @@ def calc_prob_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, 
         + 3.52 * np.log(psa_dts)
     )
 
+    return prob_disp
+
+
+@dist_lognorm
+def calc_disp_bea18(
+    yield_coef: float, period_slide: float, psa_dts: float, mag: float, **kwds
+):
+    """Bray et al. (2018)."""
+    ln_yield_coef = np.log(yield_coef)
+    ln_psa_dts = np.log(psa_dts)
+
+    ln_mean = (
+        -3.535 * ln_yield_coef
+        - 0.390 * ln_yield_coef ** 2
+        + 0.538 * ln_yield_coef * ln_psa_dts
+        + 3.060 * ln_psa_dts
+        - 0.225 * ln_psa_dts ** 2
+        + 0.550 * mag
+    )
+    if np.isclose(period_slide, 0.0):
+        ln_mean -= 5.864
+    else:
+        if period_slide < 0.1:
+            a1, a2, a3 = -5.864, -9.421, 0
+        else:
+            a1, a2, a3 = -6.896, 3.081, -0.803
+        ln_mean += a1 + a2 * period_slide + a3 * period_slide ** 2
+
+    ln_std = 0.73
+    return ln_mean, ln_std
+
+
+def calc_prob_disp_bea18(
+    yield_coef: float, period_slide: float, psa_dts: float, **kwds
+):
+    """Bray et al. (2018) slope displacement model for subduction events."""
+    ln_yield_coef = np.log(yield_coef)
+
+    if period_slide <= 0.7:
+        z = (
+            -2.64
+            - 3.20 * ln_yield_coef
+            - 0.17 * ln_yield_coef ** 2
+            - 0.49 * period_slide * ln_yield_coef
+            + 2.09 * period_slide
+            + 2.91 * np.log(psa_dts)
+        )
+    else:
+        z = (
+            -3.53
+            - 4.78 * ln_yield_coef
+            - 0.34 * ln_yield_coef ** 2
+            - 0.30 * period_slide * ln_yield_coef
+            - 0.67 * period_slide
+            + 2.66 * np.log(psa_dts)
+        )
+
+    prob_disp = norm.cdf(z)
     return prob_disp
 
 
