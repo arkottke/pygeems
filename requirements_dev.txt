@@ -1,18 +1,15 @@
 -r ./requirements.txt
 -r ./requirements_rtfd.txt
 
-coveralls
+black
+codacy-coverage
 cryptography
 flake8
 pre-commit
 pydocstyle
-pyexcel
-pyexcel-xlsx
-pytest>=3.5
 pytest-cov
 pytest-flake8
 pytest-runner
 pytest>=3.5
 watchdog
 wheel
-yapf
