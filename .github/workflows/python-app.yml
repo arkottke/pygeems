@@ -43,9 +43,9 @@ jobs:
     - name: Test with pytest
       run: |
         make test
-    - name: Upload coverage
-      env:
-        CODACY_PROJECT_TOKEN: $${{ secrets.CODACY_PROJECT_TOKEN }}
-      run: |
         coverage xml
-        python-codacy-coverage -r coverage.xml
+    - name: Run codacy-coverage-reporter
+      uses: codacy/codacy-coverage-reporter-action@master
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: coverage.xml

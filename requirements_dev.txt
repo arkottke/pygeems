@@ -2,7 +2,6 @@
 -r ./requirements_rtfd.txt
 
 black
-codacy-coverage
 cryptography
 flake8
 pre-commit
