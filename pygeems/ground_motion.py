@@ -1,10 +1,13 @@
+"""Functions and classes for calculation of ground motion parameters."""
+from typing import Optional
+
 import numpy as np
+from numpy.typing import ArrayLike
 
 from . import FPATH_DATA
-from .utils import check_bounds, check_options, dist_lognorm
-
-from typing import Optional
-from numpy.typing import ArrayLike
+from .utils import check_bounds
+from .utils import check_options
+from .utils import dist_lognorm
 
 _CACHE_REA15 = {}
 
@@ -77,6 +80,7 @@ def calc_period_rea05(
     directivity: bool = False,
     **kwargs,
 ):
+    """Rathje et al. (2005) period metrics."""
     # Model coefficients from Table 2
     C = {
         model: np.rec.fromrecords(values, names="c1,c2,c3,c4,c5,c6")

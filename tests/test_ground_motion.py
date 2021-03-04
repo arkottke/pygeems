@@ -1,10 +1,9 @@
 import json
+
 import pytest
-
-import pygeems
-
 from numpy.testing import assert_allclose
 
+import pygeems
 from . import FPATH_DATA
 
 

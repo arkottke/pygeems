@@ -1,9 +1,7 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+"""pyGEEMs: Geotechnical earthquake engineering models implemented in Python."""
+import pathlib
 
 from pkg_resources import get_distribution
-
-import pathlib
 
 FPATH_DATA = pathlib.Path(__file__).parent / "data"
 

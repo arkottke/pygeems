@@ -2,10 +2,9 @@ import pathlib
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 import pygeems
-
-from numpy.testing import assert_allclose
 
 
 FPATH_DATA = pathlib.Path(__file__).parent / "data"

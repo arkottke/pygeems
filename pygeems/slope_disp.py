@@ -1,13 +1,12 @@
+"""pyGEEMs: slope displacement functions and classes."""
 import collections
+from typing import Optional
+from typing import Union
 
-import numpy as np
 import numba
+import numpy as np
 import scipy.constants
-
-from typing import Optional, Union
-
 from numpy.typing import ArrayLike
-
 from scipy.integrate import cumtrapz
 from scipy.stats import norm
 
@@ -142,7 +141,7 @@ def calc_disp_ra11(
 
 
 def _calc_wla06_ln_a_rms(pga):
-    """Calculate $a_{rms}$ from WLA06
+    """Calculate $a_{rms}$ from WLA06.
 
     Provided by Equation (2).
     """
@@ -150,6 +149,11 @@ def _calc_wla06_ln_a_rms(pga):
 
 
 def _calc_wla06_ln_dur_key(yield_coef: float, pga: float, psa_1s: float, mag: float):
+    """Watson-Lamprey and Abrahamson (2006) duration calculation.
+
+    FIXME
+
+    """
     # Simplification
     ln_pga = np.log(pga)
     ln_pga_ky = np.log(pga / yield_coef)
@@ -238,6 +242,7 @@ def calc_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwd
 
 
 def calc_prob_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwds):
+    """Bray and Travasarou (2007), probability of non-zero displacement."""
     # Probability of a non-zero displacement
     # Modified from Equation (3)
     ln_yield_coef = np.log(yield_coef)

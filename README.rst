@@ -58,4 +58,3 @@ Please cite this software using the DOI_.
 .. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
 .. |DOI| image:: https://zenodo.org/badge/154161889.svg
    :target: https://zenodo.org/badge/latestdoi/154161889
-
