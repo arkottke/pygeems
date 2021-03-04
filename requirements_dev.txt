@@ -13,3 +13,4 @@ pytest-runner
 pytest>=3.5
 watchdog
 wheel
+twine
