@@ -46,6 +46,7 @@ clean-test:
 	rm -fr htmlcov/
 
 lint:
+	flake8 pygeems tests
 	pydocstyle pygeems/*.py
 
 test:

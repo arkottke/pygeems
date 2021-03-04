@@ -77,7 +77,8 @@ def test_calc_disp_wla06():
     ],
 )
 def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
-    # Convert from probability of zero displacement to probability of non-zero displacement
+    # Convert from probability of zero displacement to probability of non-zero
+    # displacement
     expected = 1 - expected
 
     calc = pygeems.slope_disp.calc_prob_disp_bt07(yield_coef, period_slide, psa_dts)
