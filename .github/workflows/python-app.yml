@@ -42,7 +42,7 @@ jobs:
         pip install -e .
     - name: Test with pytest
       run: |
-        pytest
+        make test
     - name: Upload coverage
       run: |
         coverage xml
