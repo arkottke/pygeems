@@ -98,7 +98,7 @@ def calc_disp_ra11(
     pgv: Optional[float] = None,
     **kwargs
 ):
-    """Rathje and Antanakos (2011) slope displacement model."""
+    """Rathje and Antonakos (2011) slope displacement model."""
     if mag is None:
         method = "pgv"
     elif pgv is None:
@@ -167,6 +167,7 @@ def _calc_wla06_ln_dur_key(yield_coef: float, pga: float, psa_1s: float, mag: fl
 
 @dist_lognorm
 def calc_disp_wla06(yield_coef: float, pga: float, psa_1s: float, mag: float, **kwds):
+    """Watson-Lamprey and Abrahamson (2006) slope displacement model."""
     # Constants from Table 1.
     # Updated values were provided by Jennie
     a1 = 5.463

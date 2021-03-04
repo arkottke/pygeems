@@ -141,6 +141,7 @@ def calc_aris_intensity_aea16(
     ln_std_psa_1s: Optional[float] = None,
     **kwargs,
 ):
+    """Abrahamson et al. (2016) Arias intensity model."""
     # From Table 3.1
     # Value of c8 is provided after equation 3.7
     C = np.rec.fromrecords(
