@@ -34,8 +34,8 @@ def calc_damping_scaling_rea15(
     ret : np.rec.array
         Array with columns period, damping scaling factor, and natural logarithmic standard deviation.
     """
-    assert 0.5 <= damping <= 30
-    assert comp in ["rotd50", "roti50", "vertical"]
+    check_bounds(damping, 0.5, 30, "damping")
+    check_options(comp, ["rotd50", "roti50", "vertical"], "comp")
 
     # Only load the coefficients once
     if comp not in _CACHE_REA15:

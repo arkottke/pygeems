@@ -49,8 +49,8 @@ Please cite this software using the DOI_.
    :target: https://img.shields.io/pypi/v/pygeems.svg
 .. |Documentation| image:: https://readthedocs.org/projects/pygeems/badge/?version=latest
     :target: https://pygeems.readthedocs.io/?badge=latest
-.. |Build Status| image:: https://travis-ci.org/arkottke/pygeems.svg?branch=master
-   :target: https://travis-ci.org/arkottke/pygeems
+.. |Build Status| image:: https://github.com/arkottke/pygeems/actions/workflows/python-app.yml/badge.svg
+   :target: https://github.com/arkottke/pygeems/actions/workflows/python-app.yml
 .. |Code Quality| image:: https://api.codacy.com/project/badge/Grade/ca4491ec1be44c239be7730c2b4021a6
    :target: https://www.codacy.com/manual/arkottke/pygeems
 .. |Test Coverage| image:: https://api.codacy.com/project/badge/Coverage/ca4491ec1be44c239be7730c2b4021a6
