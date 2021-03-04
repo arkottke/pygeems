@@ -44,6 +44,8 @@ jobs:
       run: |
         make test
     - name: Upload coverage
+      env:
+        CODACY_PROJECT_TOKEN: $${{ secrets.CODACY_PROJECT_TOKEN }}
       run: |
         coverage xml
         python-codacy-coverage -r coverage.xml
