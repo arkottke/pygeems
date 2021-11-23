@@ -180,9 +180,10 @@ def calc_density_bea16(vel_shear):
     density: :class:`numpy.ndarray` or float
         density (gm / cm³)
     """
+    # Both are in units of km/s
+    vel_comp = calc_vel_comp_bea16(vel_shear) / 1000.
     # Convert to km/sec. Copy, rather than modify inplace.
-    vel_shear = np.asarray(vel_shear) / 1000.0
-    vel_comp = calc_vel_comp_bea16(vel_shear)
+    vel_shear = np.asarray(vel_shear) / 1000.
 
     density = np.select(
         [vel_shear < 0.30, (0.30 <= vel_shear) & (vel_shear < 3.55), 3.55 <= vel_shear],
