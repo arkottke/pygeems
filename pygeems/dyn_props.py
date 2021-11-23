@@ -1,7 +1,6 @@
 import numpy as np
 
-from . import PRESS_ATM
-
+from . import KPA_TO_ATM
 
 def calc_mod_shear_ws18(
     stress_mean_eff,
@@ -92,7 +91,7 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
     }
 
     # Convert to kPa
-    stress_vert_eff = stress_vert_eff * PRESS_ATM
+    stress_vert_eff = stress_vert_eff / KPA_TO_ATM
 
     coeff, pow_blows, pow_stress = C[soil_type]["coeffs"]
     vel_shear = coeff * blows ** pow_blows * stress_vert_eff ** pow_stress
@@ -104,7 +103,7 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
     return vel_shear
 
 
-def calc_density(vel_shear):
+def calc_density_bea16(vel_shear):
     """Density model from Boore et al. (2016)
 
     Parameters
@@ -119,7 +118,7 @@ def calc_density(vel_shear):
     """
     # Convert to km/sec. Copy, rather than modify inplace.
     vel_shear = np.asarray(vel_shear) / 1000.0
-    vel_comp = calc_vel_comp(vel_shear)
+    vel_comp = calc_vel_comp_bea16(vel_shear)
 
     density = np.select(
         [vel_shear < 0.30, (0.30 <= vel_shear) & (vel_shear < 3.55), 3.55 <= vel_shear],
@@ -136,7 +135,7 @@ def calc_density(vel_shear):
     return density
 
 
-def calc_vel_comp(vel_shear):
+def calc_vel_comp_bea16(vel_shear):
     """Compression-wave velocity (Vp) from Boore et al. (2016).
 
     Parameters

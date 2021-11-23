@@ -258,6 +258,43 @@ def calc_prob_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, 
 
 
 @dist_lognorm
+def calc_disp_cr21_ann(
+    pgv: float, yield_coef: float, period_slide: float, height_ratio: float, **kwds
+):
+    """ANN Model 1 from Cho and Rathje (2021)."""
+
+    # Means from Table 2, but the mean of the ln(PGV) is replaced based on Equation (2)
+    ln_means = np.array([5.855, -3.873, -1.498, -2.262])
+    # Bias from Table 3
+    b_out = -4.687
+    # Weights and coefficients from Table 3
+    coefs = np.array(
+        [
+            [5.262, 0.66, -2.709, -0.354, 0.505, 3.024],
+            [1.678, 1.054, 1.686, -4.184, -2.9, 3.303],
+            [4.253, 0.527, -0.876, -0.265, -2.818, 3.044],
+            [0.82, 7.245, 1.074, 6.094, -3.828, 2.14],
+            [4.05, -0.154, -1.238, 0.907, -2.904, 3.449],
+        ]
+    )
+
+    # Median prediction, Equation 2
+    x = np.r_[
+        np.log([pgv, yield_coef, period_slide, height_ratio]) / ln_means,
+        # Dummy values for including the b_i value
+        1,
+    ]
+    ln_mean = b_out + coefs[:, -1] @ (1 / (1 + np.exp(-coefs[:, :-1] @ x)))
+
+    # Standard deviation model. Equations 6 & 7.
+    phi = 0.27 - 0.137 * np.log(period_slide)
+    tau = 0.106
+    ln_std = np.sqrt(phi ** 2 + tau ** 2)
+
+    return ln_mean, ln_std
+
+
+@dist_lognorm
 def calc_disp_bea18(
     yield_coef: float, period_slide: float, psa_dts: float, mag: float, **kwds
 ):
