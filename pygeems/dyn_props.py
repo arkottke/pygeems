@@ -2,6 +2,70 @@ import numpy as np
 
 from . import KPA_TO_ATM
 
+
+def calc_mod_bulk(mod_shear, poissons_ratio):
+    """Compute the Bulk modulus from the shear modulus and Poisson's ratio.
+
+    See https://en.wikipedia.org/wiki/Bulk_modulus#Further_reading
+
+    Parameters
+    ----------
+    mod_shear : `array_like` or float
+        shear modulus (kPa) other units okay too
+    poissons_ratio : `array_like` or float
+        Poisson's ratio
+
+    Returns
+    -------
+    mod_bulk : :class:`numpy.ndarray`
+        bulk modulus in same units as `mod_shear`
+    """
+
+    return (2 * mod_shear * (1 + poissons_ratio)) / (3 * (1 - 2 * poissons_ratio))
+
+
+def calc_mod_shear(mod_bulk, poissons_ratio):
+    """Compute the shear modulus from the bulk modulus and Poisson's ratioself.
+
+    See https://en.wikipedia.org/wiki/Bulk_modulus#Further_reading
+
+    Parameters
+    ----------
+    mod_bulk : `array_like` or float
+        bulk modulus (kPa) other units okay too
+    poissons_ratio : `array_like` or float
+        Poisson's ratio
+
+    Returns
+    -------
+    mod_shear : :class:`numpy.ndarray`
+        shear modulus in same units as `mod_shear`
+    """
+
+    return (3 * mod_bulk * (1 - 2 * poissons_ratio)) / (2 * (1 + poissons_ratio))
+
+
+def calc_poissons_ratio(mod_bulk, mod_shear):
+    """Compute the shear modulus from the bulk modulus and Poisson's ratioself.
+
+    See https://en.wikipedia.org/wiki/Bulk_modulus#Further_reading
+
+    Parameters
+    ----------
+    mod_bulk : `array_like` or float
+        bulk modulus (kPa) other units okay too
+    mod_shear : `array_like` or float
+        shear modulus (kPa) or same units as `mod_bulk`
+
+    Returns
+    -------
+    poissons_ratio : :class:`numpy.ndarray`
+        shear modulus in same units as `mod_shear`
+    """
+
+    return (3 * mod_bulk - 2 * mod_shear) / (2 * (3 * mod_bulk + mod_shear))
+
+
 def calc_mod_shear_ws18(
     stress_mean_eff,
     fines,
