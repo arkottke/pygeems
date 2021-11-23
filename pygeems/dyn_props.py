@@ -102,3 +102,59 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
         vel_shear *= asf
 
     return vel_shear
+
+
+def calc_density(vel_shear):
+    """Density model from Boore et al. (2016)
+
+    Parameters
+    ----------
+    vel_shear: `array_like`
+        shear-wave velocity (m/s)
+
+    Returns
+    -------
+    density: :class:`numpy.ndarray` or float
+        density (gm / cm³)
+    """
+    # Convert to km/sec. Copy, rather than modify inplace.
+    vel_shear = np.asarray(vel_shear) / 1000.0
+    vel_comp = calc_vel_comp(vel_shear)
+
+    density = np.select(
+        [vel_shear < 0.30, (0.30 <= vel_shear) & (vel_shear < 3.55), 3.55 <= vel_shear],
+        [
+            1 + 1.53 * vel_shear ** 0.85 / (0.35 + 1.889 * vel_shear ** 1.7),
+            1.74 * vel_comp ** 0.25,
+            1.6612 * vel_comp
+            - 0.4721 * vel_comp ** 2
+            + 0.0671 * vel_comp ** 3
+            - 0.0043 * vel_comp ** 4
+            + 0.000106 * vel_comp ** 5,
+        ],
+    )
+    return density
+
+
+def calc_vel_comp(vel_shear):
+    """Compression-wave velocity (Vp) from Boore et al. (2016).
+
+    Parameters
+    ----------
+    vel_shear : `array_like`
+        shear-wave velocity (m/s)
+
+    Returns
+    -------
+    vel_comp : np.ndarray or float
+        compression-wave velocity (m/s)
+    """
+    vel_shear = np.asarray(vel_shear) / 1000
+    vel_comp = 1000 * (
+        0.9409
+        + 2.0947 * vel_shear
+        - 0.8206 * vel_shear ** 2
+        + 0.2683 * vel_shear ** 3
+        - 0.0251 * vel_shear ** 4
+    )
+    return vel_comp
