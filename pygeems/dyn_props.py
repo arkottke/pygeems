@@ -1,4 +1,8 @@
+import pathlib
+
 import numpy as np
+import numpy.typing as npt
+import pandas as pd
 
 from . import KPA_TO_ATM
 
@@ -167,6 +171,64 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
     return vel_shear
 
 
+BJ97_DATA = None
+
+def calc_vel_shear_bj97(depths_m: npt.ArrayLike, profile: str) -> npt.ArrayLike:
+    """Compute the generic rock model from Boore & Joyner (1997).
+
+    Parameters
+    ----------
+    depths: `array_like`
+        depth [m]
+
+    profile: str, options: "rock" or "hardrock"
+        Profile to be generated
+
+    Returns
+    -------
+    vel_shear : np.ndarray
+        shear-wave velocity [m/s]
+    """
+
+    depths_km = depths_m / 1e3
+
+    if profile == "rock":
+        vel_shear_kps = np.piecewise(
+            depths_km,
+            [
+                depths_km <= 0.001,
+                np.logical_and(0.001 < depths_km, depths_km <= 0.030),
+                np.logical_and(0.030 < depths_km, depths_km <= 0.190),
+                np.logical_and(0.190 < depths_km, depths_km <= 4.000),
+                np.logical_and(4.000 < depths_km, depths_km <= 8.000),
+            ],
+            [
+                0.245,
+                lambda z: 2.206 * z ** 0.272,
+                lambda z: 3.542 * z ** 0.407,
+                lambda z: 2.505 * z ** 0.199,
+                lambda z: 2.927 * z ** 0.086,
+            ],
+        )
+    elif profile == "hardrock":
+        global BJ97_DATA
+
+        if BJ97_DATA is None:
+            # Load the data if not previously loaded
+            BJ97_DATA = pd.read_csv(
+                pathlib.Path(__file__).parent / "data/boore-joyner-97-hard_rock.csv"
+            )
+            BJ97_DATA["slow_spk"] = 1 / BJ97_DATA["vel_shear_kps"]
+
+        vel_shear_kps = 1 / np.interp(
+            depths_km, BJ97_DATA["depth_km"], BJ97_DATA["slow_spk"]
+        )
+    else:
+        raise NotImplemented
+
+    return vel_shear_kps * 1e3
+
+
 def calc_density_bea16(vel_shear):
     """Density model from Boore et al. (2016)
 
@@ -181,9 +243,9 @@ def calc_density_bea16(vel_shear):
         density (gm / cm³)
     """
     # Both are in units of km/s
-    vel_comp = calc_vel_comp_bea16(vel_shear) / 1000.
+    vel_comp = calc_vel_comp_bea16(vel_shear) / 1000.0
     # Convert to km/sec. Copy, rather than modify inplace.
-    vel_shear = np.asarray(vel_shear) / 1000.
+    vel_shear = np.asarray(vel_shear) / 1000.0
 
     density = np.select(
         [vel_shear < 0.30, (0.30 <= vel_shear) & (vel_shear < 3.55), 3.55 <= vel_shear],
