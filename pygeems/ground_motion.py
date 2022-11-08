@@ -51,12 +51,12 @@ def calc_damping_scaling_rea15(
     ln_dsf = (
         C.b0
         + C.b1 * ln_damp
-        + C.b2 * ln_damp ** 2
-        + (C.b3 + C.b4 * ln_damp + C.b5 * ln_damp ** 2) * mag
-        + (C.b6 + C.b7 * ln_damp + C.b8 * ln_damp ** 2) * np.log(dist_rup + 1)
+        + C.b2 * ln_damp**2
+        + (C.b3 + C.b4 * ln_damp + C.b5 * ln_damp**2) * mag
+        + (C.b6 + C.b7 * ln_damp + C.b8 * ln_damp**2) * np.log(dist_rup + 1)
     )
     ln_damp_5 = np.log(damping / 5)
-    ln_std = np.abs(C.a0 * ln_damp_5 + C.a1 * ln_damp_5 ** 2)
+    ln_std = np.abs(C.a0 * ln_damp_5 + C.a1 * ln_damp_5**2)
 
     if periods:
         # Interpolate over the provided periods
@@ -128,7 +128,7 @@ def calc_period_rea05(
         "period_pred": {"b": 0.42, "c": 0.38, "d": 0.31},
     }[kind][site_class]
     inter = {"period_mean": 0.17, "period_avg": 0.13, "period_pred": 0.22}[kind]
-    ln_std = np.sqrt(intra ** 2 + inter ** 2)
+    ln_std = np.sqrt(intra**2 + inter**2)
 
     return ln_period, ln_std
 
@@ -160,6 +160,7 @@ def calc_aris_intensity_aea16(
         + C.c5 * np.log(psa_1s)
     )
     if hanging_wall:
+        assert dist_jb is not None
         ln_arias_int += C.c8 * np.clip(1 - (dist_jb - 5) / 5, 0, 1)
 
     if ln_std_pga is None and ln_std_psa_1s is None:
