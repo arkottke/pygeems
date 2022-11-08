@@ -85,8 +85,8 @@ def calc_mod_shear_ws18(
     if fines <= 0.12:
         # Clean sands and gravels
         c_g = 63.9e3
-        f_g = unif_coef ** -0.21 * void_ratio ** (-1.12 - (0.09 * diam_mean) ** 0.54)
-        stress_exp = 0.48 * unif_coef ** 0.08 - 1.03 * fines
+        f_g = unif_coef**-0.21 * void_ratio ** (-1.12 - (0.09 * diam_mean) ** 0.54)
+        stress_exp = 0.48 * unif_coef**0.08 - 1.03 * fines
     elif fines > 0.12 and plas_index is None:
         c_g = 84.8e3
         f_g = np.exp(-0.53) * (1 - 1.32 * water_content)
@@ -102,7 +102,7 @@ def calc_mod_shear_ws18(
     else:
         raise NotImplementedError
 
-    return c_g * f_g * stress_mean_eff ** stress_exp
+    return c_g * f_g * stress_mean_eff**stress_exp
 
 
 def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
@@ -162,7 +162,7 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
     stress_vert_eff = stress_vert_eff / KPA_TO_ATM
 
     coeff, pow_blows, pow_stress = C[soil_type]["coeffs"]
-    vel_shear = coeff * blows ** pow_blows * stress_vert_eff ** pow_stress
+    vel_shear = coeff * blows**pow_blows * stress_vert_eff**pow_stress
 
     if age is not None:
         asf = C[soil_type]["asf"][age]
@@ -172,6 +172,7 @@ def calc_vel_shear_spt_wds12(blows, stress_vert_eff, soil_type=all, age=None):
 
 
 BJ97_DATA = None
+
 
 def calc_vel_shear_bj97(depths_m: npt.ArrayLike, profile: str) -> npt.ArrayLike:
     """Compute the generic rock model from Boore & Joyner (1997).
@@ -204,10 +205,10 @@ def calc_vel_shear_bj97(depths_m: npt.ArrayLike, profile: str) -> npt.ArrayLike:
             ],
             [
                 0.245,
-                lambda z: 2.206 * z ** 0.272,
-                lambda z: 3.542 * z ** 0.407,
-                lambda z: 2.505 * z ** 0.199,
-                lambda z: 2.927 * z ** 0.086,
+                lambda z: 2.206 * z**0.272,
+                lambda z: 3.542 * z**0.407,
+                lambda z: 2.505 * z**0.199,
+                lambda z: 2.927 * z**0.086,
             ],
         )
     elif profile == "hardrock":
@@ -250,13 +251,13 @@ def calc_density_bea16(vel_shear):
     density = np.select(
         [vel_shear < 0.30, (0.30 <= vel_shear) & (vel_shear < 3.55), 3.55 <= vel_shear],
         [
-            1 + 1.53 * vel_shear ** 0.85 / (0.35 + 1.889 * vel_shear ** 1.7),
-            1.74 * vel_comp ** 0.25,
+            1 + 1.53 * vel_shear**0.85 / (0.35 + 1.889 * vel_shear**1.7),
+            1.74 * vel_comp**0.25,
             1.6612 * vel_comp
-            - 0.4721 * vel_comp ** 2
-            + 0.0671 * vel_comp ** 3
-            - 0.0043 * vel_comp ** 4
-            + 0.000106 * vel_comp ** 5,
+            - 0.4721 * vel_comp**2
+            + 0.0671 * vel_comp**3
+            - 0.0043 * vel_comp**4
+            + 0.000106 * vel_comp**5,
         ],
     )
     return density
@@ -279,8 +280,8 @@ def calc_vel_comp_bea16(vel_shear):
     vel_comp = 1000 * (
         0.9409
         + 2.0947 * vel_shear
-        - 0.8206 * vel_shear ** 2
-        + 0.2683 * vel_shear ** 3
-        - 0.0251 * vel_shear ** 4
+        - 0.8206 * vel_shear**2
+        + 0.2683 * vel_shear**3
+        - 0.0251 * vel_shear**4
     )
     return vel_comp

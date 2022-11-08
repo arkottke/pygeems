@@ -69,9 +69,9 @@ def calc_disp_rs08(
     ln_disp = (
         P.a1
         + P.a2 * yp_ratio
-        + P.a3 * yp_ratio ** 2
-        + P.a4 * yp_ratio ** 3
-        + P.a5 * yp_ratio ** 4
+        + P.a3 * yp_ratio**2
+        + P.a4 * yp_ratio**3
+        + P.a5 * yp_ratio**4
         + P.a6 * np.log(pga)
     )
     if method == "mag":
@@ -80,7 +80,7 @@ def calc_disp_rs08(
         ln_disp += P.a7 * np.log(pgv)
 
     if method == "mag":
-        ln_std = 0.73 + 0.79 * yp_ratio - 0.54 * yp_ratio ** 2
+        ln_std = 0.73 + 0.79 * yp_ratio - 0.54 * yp_ratio**2
     else:
         ln_std = 0.41 + 0.52 * yp_ratio
 
@@ -110,20 +110,20 @@ def calc_disp_ra11(
         k_max = pga
     else:
         ln_pr = np.log(period_ratio / 0.1)
-        ln_ratio = (0.459 - 0.702 * pga) * ln_pr + (-0.228 + 0.076 * pga) * ln_pr ** 2
+        ln_ratio = (0.459 - 0.702 * pga) * ln_pr + (-0.228 + 0.076 * pga) * ln_pr**2
         k_max = pga * np.exp(ln_ratio)
 
     # Compute median
     if method == "mag":
         ln_disp = calc_disp_rs08(yield_coef, k_max, mag=mag, stats=True)[0]
-        f_1 = np.minimum(3.69 * period_slide - 1.22 * period_slide ** 2, 2.78)
+        f_1 = np.minimum(3.69 * period_slide - 1.22 * period_slide**2, 2.78)
         ln_disp += f_1
     else:
         if period_ratio < 0.2:
             k_velmax = pgv
         else:
             ln_pr = np.log(period_ratio / 0.2)
-            ln_ratio = 0.240 * ln_pr + (-0.091 - 0.171 * pga) * ln_pr ** 2
+            ln_ratio = 0.240 * ln_pr + (-0.091 - 0.171 * pga) * ln_pr**2
             k_velmax = pgv * np.exp(ln_ratio)
 
         ln_disp = calc_disp_rs08(yield_coef, k_max, pgv=k_velmax, stats=True)[0]
@@ -201,7 +201,7 @@ def calc_disp_wla06(yield_coef: float, pga: float, psa_1s: float, mag: float, **
         + b2 * (ln_psa_1s + 0.45) ** 2
         + c1 * (ln_a_rms - 1)
         + d1 * ln_psa_pga
-        + d2 * ln_psa_pga ** 2
+        + d2 * ln_psa_pga**2
         + e1 * (ln_dur_ky - 0.74)
         + e2 * (ln_dur_ky - 0.74) ** 2
         + 1 / (f1 * (ln_pga_ky + f2))
@@ -231,10 +231,10 @@ def calc_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, **kwd
     ln_mean = -0.22 if period_slide < 0.05 else -1.10
     ln_mean += (
         -2.83 * ln_yield_coef
-        - 0.333 * ln_yield_coef ** 2
+        - 0.333 * ln_yield_coef**2
         + 0.566 * ln_yield_coef * ln_psa_dts
         + 3.04 * ln_psa_dts
-        - 0.244 * ln_psa_dts ** 2
+        - 0.244 * ln_psa_dts**2
         + 1.5 * period_slide
     )
     ln_std = 0.66
@@ -289,7 +289,7 @@ def calc_disp_cr21_ann(
     # Standard deviation model. Equations 6 & 7.
     phi = 0.27 - 0.137 * np.log(period_slide)
     tau = 0.106
-    ln_std = np.sqrt(phi ** 2 + tau ** 2)
+    ln_std = np.sqrt(phi**2 + tau**2)
 
     return ln_mean, ln_std
 
@@ -304,10 +304,10 @@ def calc_disp_bea18(
 
     ln_mean = (
         -3.535 * ln_yield_coef
-        - 0.390 * ln_yield_coef ** 2
+        - 0.390 * ln_yield_coef**2
         + 0.538 * ln_yield_coef * ln_psa_dts
         + 3.060 * ln_psa_dts
-        - 0.225 * ln_psa_dts ** 2
+        - 0.225 * ln_psa_dts**2
         + 0.550 * mag
     )
     if np.isclose(period_slide, 0.0):
@@ -317,7 +317,7 @@ def calc_disp_bea18(
             a1, a2, a3 = -5.864, -9.421, 0
         else:
             a1, a2, a3 = -6.896, 3.081, -0.803
-        ln_mean += a1 + a2 * period_slide + a3 * period_slide ** 2
+        ln_mean += a1 + a2 * period_slide + a3 * period_slide**2
 
     ln_std = 0.73
     return ln_mean, ln_std
@@ -333,7 +333,7 @@ def calc_prob_disp_bea18(
         z = (
             -2.64
             - 3.20 * ln_yield_coef
-            - 0.17 * ln_yield_coef ** 2
+            - 0.17 * ln_yield_coef**2
             - 0.49 * period_slide * ln_yield_coef
             + 2.09 * period_slide
             + 2.91 * np.log(psa_dts)
@@ -342,7 +342,7 @@ def calc_prob_disp_bea18(
         z = (
             -3.53
             - 4.78 * ln_yield_coef
-            - 0.34 * ln_yield_coef ** 2
+            - 0.34 * ln_yield_coef**2
             - 0.30 * period_slide * ln_yield_coef
             - 0.67 * period_slide
             + 2.66 * np.log(psa_dts)
