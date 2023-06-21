@@ -15,6 +15,25 @@ from .utils import dist_lognorm
 FloatOrArrayLike = Union[float, ArrayLike]
 
 
+class Coefficients(collections.abc.Mapping):
+    """Read-only container for model coefficients."""
+
+    def __init__(self, **kwds):
+        self._data = kwds
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __getattr__(self, key):
+        return self.__getitem__(key)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+
 @dist_lognorm
 def calc_disp_rs08(
     yield_coef: float,
@@ -291,14 +310,100 @@ def calc_disp_cr21_ann(
     tau = 0.106
     ln_std = np.sqrt(phi**2 + tau**2)
 
+    # FIXME: How to return phi and tau as well?
     return ln_mean, ln_std
 
 
 @dist_lognorm
-def calc_disp_bea18(
+def calc_disp_cr22(
+    yield_coef: float,
+    period_slide: float,
+    height_ratio: float,
+    pgv: Optional[float] = None,
+    pga: Optional[float] = None,
+    mag: Optional[float] = None,
+    **kwds
+):
+    """Displacement model from Cho and Rathje (2022)."""
+
+    ln_yield_coef = np.log(yield_coef)
+    ln_period_slide = np.log(period_slide)
+
+    pgv_model = pga is None
+
+    if pgv_model:
+        C = Coefficients(
+            b_0=-1.01,
+            b_1=1.57,
+            b_2=-0.25,
+            c_0=0.81,
+            c_1=-1.05,
+            c_2=-0.60,
+            b_3=-4.50,
+            b_4=-1.37,
+            c_3=1.51,
+            c_4=0.10,
+            p_0=0.26,
+            p_1=-0.14,
+            p_2=0.40,
+            p_3=0.16,
+        )
+    else:
+        C = Coefficients(
+            b_0=3.94,
+            b_1=1.28,
+            b_2=-0.27,
+            c_0=1.21,
+            c_1=0.29,
+            c_2=0.25,
+            b_3=1.96,
+            b_4=-0.89,
+            c_3=1.47,
+            c_4=0.14,
+            e_0=0.56,
+            e_1=0.66,
+        )
+
+    # Mean model
+    if height_ratio <= 0.6:
+        a_0 = C.b_0 + C.b_1 * ln_period_slide + C.b_2 * ln_yield_coef
+    else:
+        a_0 = C.b_3 + C.b_4 * ln_yield_coef
+
+    if height_ratio <= 0.6:
+        a_1 = C.c_0 + C.c_1 * ln_period_slide + C.c_2 * ln_period_slide**2
+    else:
+        a_1 = C.c_3 + C.c_4 * ln_yield_coef
+
+    if pgv_model:
+        ln_mean = a_0 + a_1 * np.log(pgv)
+    else:
+        d_0 = C.e_0 if height_ratio <= 0.6 else C.e_1
+        ln_mean = a_0 + a_1 * np.log(pga) + d_0 * (mag - 6.5)
+
+    # Uncertainty
+    if pgv_model:
+        if height_ratio <= 0.6:
+            phi = C.p_0 + C.p_1 * ln_period_slide
+        else:
+            flag_ky = 0 if yield_coef < 0.2 else 1
+            phi = C.p_2 + C.p_3 * np.log(yield_coef / 0.2) * flag_ky
+
+        tau = 0.139
+    else:
+        phi = 0.72
+        tau = 0.143
+
+    ln_std = np.sqrt(phi**2 + tau**2)
+
+    return ln_mean, ln_std
+
+
+@dist_lognorm
+def calc_disp_bea17(
     yield_coef: float, period_slide: float, psa_dts: float, mag: float, **kwds
 ):
-    """Bray et al. (2018)."""
+    """Bray et al. (2017)."""
     ln_yield_coef = np.log(yield_coef)
     ln_psa_dts = np.log(psa_dts)
 
@@ -323,10 +428,10 @@ def calc_disp_bea18(
     return ln_mean, ln_std
 
 
-def calc_prob_disp_bea18(
+def calc_prob_disp_bea17(
     yield_coef: float, period_slide: float, psa_dts: float, **kwds
 ):
-    """Bray et al. (2018) slope displacement model for subduction events."""
+    """Bray et al. (2017) slope displacement model for subduction events."""
     ln_yield_coef = np.log(yield_coef)
 
     if period_slide <= 0.7:
@@ -352,7 +457,7 @@ def calc_prob_disp_bea18(
     return prob_disp
 
 
-@numba.jit
+@numba.jit(nopython=True)
 def _calc_block_velocity(time_step: float, accels: ArrayLike, yield_coef: float):
     """Compute the velocity of a sliding block.
 
