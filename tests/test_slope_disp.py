@@ -176,7 +176,7 @@ def test_calc_disp_cr22_pgv(yield_coef, period_slide, height_ratio, pgv, expecte
     assert_allclose(ret, expected, rtol=0.05)
 
 
-# Test values from Figure 14 of Cho and Rathje (20222)
+# Test values from Figure 14 of Cho and Rathje (2022)
 @pytest.mark.parametrize(
     "yield_coef,period_slide,height_ratio,mag,pga,expected",
     [
@@ -191,6 +191,25 @@ def test_calc_disp_cr22_mag_pga(
     ret = pygeems.slope_disp.calc_disp_cr22(
         yield_coef, period_slide, height_ratio, mag=mag, pga=pga
     )
+    # Reported values are probability of no displacement
+    # Limited number of digits in table make testing difficult
+    assert_allclose(ret, expected, rtol=0.05)
+
+
+# Tests from Figure 11 in the Cho and Rathje (2021)
+@pytest.mark.parametrize(
+    "yield_coef,period_slide,height_ratio,pgv,expected",
+    [
+        (0.1, 0.4, 0.2, 20, 6.0),
+        (0.2, 0.4, 0.8, 20, 5.6),
+        (0.4, 0.4, 1.6, 20, 3.1),
+        (0.1, 0.3, 0.2, 20, 3.9),
+        (0.2, 0.4, 0.2, 20, 5.3),
+        (0.4, 0.5, 0.2, 20, 6.3),
+    ],
+)
+def test_calc_disp_cr21(yield_coef, period_slide, height_ratio, pgv, expected):
+    ret = pygeems.slope_disp.calc_disp_cr21(pgv, yield_coef, period_slide, height_ratio)
     # Reported values are probability of no displacement
     # Limited number of digits in table make testing difficult
     assert_allclose(ret, expected, rtol=0.05)
