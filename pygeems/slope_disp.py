@@ -277,7 +277,7 @@ def calc_prob_disp_bt07(yield_coef: float, period_slide: float, psa_dts: float, 
 
 
 @dist_lognorm
-def calc_disp_cr21_ann(
+def calc_disp_cr21(
     pgv: float, yield_coef: float, period_slide: float, height_ratio: float, **kwds
 ):
     """ANN Model 1 from Cho and Rathje (2021)."""
