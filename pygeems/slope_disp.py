@@ -7,7 +7,7 @@ import numba
 import numpy as np
 import scipy.constants
 from numpy.typing import ArrayLike
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 from scipy.stats import norm
 
 from .utils import dist_lognorm
@@ -40,7 +40,7 @@ def calc_disp_rs08(
     pga: FloatOrArrayLike,
     mag: Optional[float] = None,
     pgv: Optional[float] = None,
-    **kwargs
+    **kwargs,
 ):
     """Rathje and Saygili (2008) slope displacement model.
 
@@ -114,7 +114,7 @@ def calc_disp_ra11(
     period_mean: float,
     mag: Optional[float] = None,
     pgv: Optional[float] = None,
-    **kwargs
+    **kwargs,
 ):
     """Rathje and Antonakos (2011) slope displacement model."""
     if mag is None:
@@ -322,7 +322,7 @@ def calc_disp_cr22(
     pgv: Optional[float] = None,
     pga: Optional[float] = None,
     mag: Optional[float] = None,
-    **kwds
+    **kwds,
 ):
     """Displacement model from Cho and Rathje (2022)."""
 
@@ -537,6 +537,6 @@ def calc_rigid_disp(
     accels = accels * scale
 
     vels = _calc_block_velocity(time_step, accels, yield_coef)
-    disps = np.r_[0, cumtrapz(vels, dx=time_step)]
+    disps = np.r_[0, cumulative_trapezoid(vels, dx=time_step)]
 
     return disps, vels
