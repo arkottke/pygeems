@@ -1,12 +1,9 @@
-import pathlib
-
 import numpy as np
 import pytest
 
 import pygeems
 
-
-FPATH_DATA = pathlib.Path(__file__).parent / 'data'
+from . import FPATH_DATA
 
 
 @pytest.mark.parametrize(
@@ -23,14 +20,14 @@ FPATH_DATA = pathlib.Path(__file__).parent / 'data'
         #(0.1, 0.38, None, 80, 36.9),
     ]
 )
-def test_calc_disp_rs08(
+def test_calc_disp_sr09(
         yield_coef,
         pga,
         mag,
         pgv,
         expected
 ):
-    disp = pygeems.slope_disp.calc_disp_rs08(
+    disp = pygeems.slope_disp.calc_disp_sr09(
         yield_coef, pga, mag=mag, pgv=pgv
     )
     # Compare to 2 cm of displacement
@@ -104,8 +101,9 @@ def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
     np.testing.assert_allclose(calc, expected, atol=0.02, rtol=0.02)
 
 
-# Test values from Table 1 in BT07. Authors provided a range of values, which are
-# interpreted to be log-normally distributed. The median is computed and tested against
+# Test values from Table 1 in BT07. Authors provided a range of values, which
+# are interpreted to be log-normally distributed. The median is computed and
+# tested against
 @pytest.mark.parametrize(
     'yield_coef,period_slide,psa_dts,expected',
     [
@@ -114,7 +112,8 @@ def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
     ]
 )
 def test_calc_disp_bt07(yield_coef, period_slide, psa_dts, expected):
-    median = pygeems.slope_disp.calc_disp_bt07(yield_coef, period_slide, psa_dts)
+    median = pygeems.slope_disp.calc_disp_bt07(
+        yield_coef, period_slide, psa_dts)
     np.testing.assert_allclose(median, expected, rtol=0.10)
 
 
@@ -131,12 +130,40 @@ def test_calc_block_displacement(invert, yield_coef, expected):
     time_step = 0.01
     # Acceleration data in g
     accels = np.loadtxt(str(FPATH_DATA / 'kobe-nis-000.dat'))
-    yield_coef = yield_coef
 
-    disps, vels = pygeems.slope_disp.calc_rigid_disp(
-        time_step, accels, yield_coef, invert)
+    disps = pygeems.slope_disp.calc_rigid_disp(
+        time_step, accels, yield_coef, invert)['disps']
     disp_max = disps[-1]
     # Large rtol because of slightly different implementations
     np.testing.assert_allclose(disp_max, expected, rtol=0.04)
 
 
+def test_ha19_trans_func():
+    ha19 = pygeems.slope_disp.HaleAbrahamson19(100, freq_nat=5.)
+    np.testing.assert_allclose(ha19.shear_vel, 1500)
+
+    trans_func = ha19._calc_trans_func([0.1], 0.01)
+    np.testing.assert_allclose(trans_func, [1])
+
+
+# FIXME: Add test value
+def test_ha19_displacement():
+    # Acceleration data in g
+    ts = pygeems.ground_motion.TimeSeries.read_at2(
+        FPATH_DATA / 'RSN4863_CHUETSU_65036EW.AT2')
+
+    ha19 = pygeems.slope_disp.HaleAbrahamson19(50, shear_vel=800)
+    disp = ha19(ts.time_step, ts.accels, 0.1)
+
+
+@pytest.mark.parametrize(
+    'pgv,pga,mag,expected',
+    # Test values selected from Figure 3.13
+    [
+        (10, None, None, 5.9),
+        (None, 0.1, 7, 6.1),
+    ]
+)
+def test_calc_disp_cr20(pgv, pga, mag, expected):
+    disp = pygeems.slope_disp.calc_disp_cr20(0.1, 0.6, pga, mag, pgv)
+    np.testing.assert_allclose(disp, expected, rtol=0.01)

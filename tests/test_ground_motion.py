@@ -6,6 +6,8 @@ import pygeems
 
 from numpy.testing import assert_allclose
 
+from . import FPATH_DATA
+
 
 @pytest.mark.parametrize(
     'kind,mag,dist_rup,site_class,directivity,expected',
@@ -21,3 +23,21 @@ def test_calc_period_rea05(kind, mag, dist_rup, site_class, directivity, expecte
         kind, mag, dist_rup, site_class, directivity
     )
     assert_allclose(actual, expected, rtol=0.01)
+
+
+@pytest.fixture()
+def timeseries():
+    ts = pygeems.ground_motion.TimeSeries.read_at2(
+        FPATH_DATA / 'RSN4863_CHUETSU_65036EW.AT2'
+    )
+    return ts
+
+
+def test_at2_time_step(timeseries):
+    assert_allclose(timeseries.time_step, 0.01)
+
+
+def test_at2_accels(timeseries):
+    assert_allclose(timeseries.accels.size, 6000)
+    assert_allclose(timeseries.accels[[0, -1]],
+                    [-.2674464E-03, -.4684600E-04])
