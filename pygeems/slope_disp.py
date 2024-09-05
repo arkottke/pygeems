@@ -1,14 +1,15 @@
 """pyGEEMs: slope displacement functions and classes."""
+
 import collections
 from typing import Optional
 from typing import Union
 
-import numba
 import numpy as np
-import scipy.constants
 from numpy.typing import ArrayLike
-from scipy.integrate import cumulative_trapezoid
+
 from scipy.stats import norm
+
+from typing import Optional
 
 from .utils import dist_lognorm
 
@@ -43,6 +44,11 @@ def calc_disp_rs08(
     **kwargs,
 ):
     """Rathje and Saygili (2008) slope displacement model.
+
+    Two models are provided:
+        - PGV
+        - PGA and M_w
+    The standard deviation model is only provided for the *PGV* based model.
 
     Parameters
     ----------
@@ -109,7 +115,7 @@ def calc_disp_rs08(
 @dist_lognorm
 def calc_disp_ra11(
     yield_coef: float,
-    pga: FloatOrArrayLike,
+    pga: float | npt.ArrayLike,
     period_slide: float,
     period_mean: float,
     mag: Optional[float] = None,
@@ -225,6 +231,7 @@ def calc_disp_wla06(yield_coef: float, pga: float, psa_1s: float, mag: float, **
         + e2 * (ln_dur_ky - 0.74) ** 2
         + 1 / (f1 * (ln_pga_ky + f2))
     )
+
     # Equation not valid for PGA values less than the yield coef
     try:
         ln_mean[pga < yield_coef] = np.nan
@@ -505,7 +512,7 @@ def _calc_block_velocity(time_step: float, accels: ArrayLike, yield_coef: float)
 
 
 def calc_rigid_disp(
-    time_step: float, accels: ArrayLike, yield_coef: float, invert: bool = False
+    time_step: float, accels: npt.ArrayLike, yield_coef: float, invert: bool = False
 ):
     """Compute the displacement and velocity of a rigid sliding mass.
 
@@ -539,4 +546,265 @@ def calc_rigid_disp(
     vels = _calc_block_velocity(time_step, accels, yield_coef)
     disps = np.r_[0, cumulative_trapezoid(vels, dx=time_step)]
 
-    return disps, vels
+    return {"disps": disps, "vels": vels}
+
+
+class HaleAbrahamson19:
+    """
+    Parameters
+    ----------
+    height: float
+        Height in [ft]
+    shear_vel: float
+        Shear-wave velocity in [ft]
+    freq_nat: float
+        Natural frequency in [Hz]
+    nl_model: str, 'darendeli' or 'vucetic_dobry'
+        Nonlinear model of the material
+    """
+
+    C = np.rec.fromrecords(
+        [
+            0.76,
+            0.35,
+            -0.00049,
+            0.00329,
+            -0.03558,
+            0.35297,
+            -0.89726,
+            1.25375,
+            0.00024,
+            -1.14426,
+            0.00090,
+            -1.91824,
+            0.00145,
+            -0.00993,
+            0.86560,
+            0.57934,
+            0.00172,
+            0.40392,
+            0.85,
+        ],
+        names="a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,alpha",
+    )
+
+    NL_MODELS = ("darendeli", "vucetic_dobry")
+
+    def __init__(
+        self,
+        height: float,
+        shear_vel: Optional[float] = None,
+        freq_nat: Optional[float] = None,
+        nl_model: str = "darendeli",
+    ):
+        assert nl_model in self.NL_MODELS
+
+        self._height = height
+        self._nl_model = nl_model
+
+        if shear_vel is None:
+            self._freq_nat = freq_nat
+            self._shear_vel = 3 * self.height * freq_nat
+        elif freq_nat is None:
+            self._shear_vel = shear_vel
+            self._freq_nat = shear_vel / (3 * height)
+        else:
+            raise NotImplementedError
+
+    @property
+    def freq_nat(self):
+        return self._freq_nat
+
+    @property
+    def height(self):
+        return self._height
+
+    @property
+    def shear_vel(self):
+        return self._shear_vel
+
+    def __call__(self, time_step: float, accels: np.ndarray, yield_coef: float):
+        # Compute acceleration of sliding mass
+        accels = self._calc_sliding_mass_accels(time_step, accels)
+
+        disps = [
+            calc_rigid_disp(time_step, accels, yield_coef, invert=invert)["disps"][-1]
+            for invert in [True, False]
+        ]
+        return disps
+
+    def _calc_sliding_mass_accels(self, time_step: float, accels: np.ndarray):
+        # Compute the Fourier amplitude spectra
+        accels = np.asarray(accels)
+        fourier_amps = np.fft.rfft(accels)
+        freqs = np.fft.rfftfreq(accels.size, d=time_step)
+        # Compute the nonlinear period
+        period_nl = self.C.a1 * np.log(1 / self.freq_nat) + self.C.a2
+        ln_spec_accel = np.log(
+            pyrotd.calc_oscillator_resp(
+                freqs,
+                fourier_amps,
+                0.05,
+                1 / period_nl,
+                peak_resp_only=True,
+                osc_type="psa",
+            )
+        )
+
+        trans_func = self._calc_trans_func(freqs, ln_spec_accel)
+        fourier_amps *= trans_func
+
+        return np.fft.irfft(fourier_amps)
+
+    def _calc_trans_func(self, freqs: np.ndarray, ln_spec_accel: np.ndarray):
+        freqs = np.asarray(freqs)
+        ln_height = np.log(self.height)
+
+        if self._nl_model == "darendeli":
+            c3 = 1
+            b5 = 0
+            b6 = 0
+        elif self._nl_model == "vucetic_dobry":
+            c3 = 0.32
+            b5 = -2.0
+            b6 = -1.0
+        else:
+            raise NotImplementedError
+
+        b1 = self.C.a9 * self.shear_vel + self.C.a10
+        b2 = self.C.a11 * self.shear_vel + self.C.a12
+        b3 = (self.C.a13 * ln_height + self.C.a14) * self.shear_vel + (
+            self.C.a15 * ln_height + self.C.a16
+        )
+        b4 = self.C.a17 * self.shear_vel + self.C.a18
+        damping = np.exp(b1 + b2 / (1 + np.exp(b3 + b5 + (b4 + b6) * ln_spec_accel)))
+
+        c1 = (self.C.a3 * ln_height + self.C.a4) * self.shear_vel + (
+            self.C.a5 * ln_height + self.C.a6
+        )
+        c2 = self.C.a7 * c1 + self.C.a8
+        period_ratio = 1 + c3 * np.exp(c1 * (c2 + ln_spec_accel))
+        # Compute the effective natural frequency of the dam correcting for the
+        # shortening of the frequency due to nonlinearity and damping.
+        nat_freq_eff = self.freq_nat / ((1 - damping**2) * period_ratio)
+
+        trans_func = self.C.alpha * (
+            1 + (1j**2 / (freqs**2 - nat_freq_eff**2 - 2j * nat_freq_eff * freqs))
+        )
+        # Limit transfer function to be at least one below the natural
+        # frequency.
+        mask = (freqs < nat_freq_eff) & (trans_func < 1.0)
+        trans_func[mask] = 1.0
+
+        return trans_func
+
+
+@dist_lognorm
+def calc_disp_cr20(
+    yield_coef: float,
+    period_slide: float,
+    pga: Optional[float] = None,
+    mag: Optional[float] = None,
+    pgv: Optional[float] = None,
+):
+    """Calculate the displacement predicted by Cho and Rathje (2020).
+
+    Two models are provided:
+        - PGV
+        - PGA and M_w
+    The standard deviation model is only provided for the *PGV* based model.
+
+    Parameters
+    ----------
+    yield_coef: float
+        yield coefficient of the slope [g]
+    period_slide: float
+        period of the sliding mass [sec]
+    pga: float or None
+        peak ground acceleration of the ground motion [g]
+    mag: float or None
+        moment magnitude of the event
+    pgv: float or None
+        peak ground velocity of the ground motion [cm/sec]
+    """
+    # Check the inputs
+    if pgv is None and pga and mag:
+        method = "pga"
+    elif pgv and pga is None and mag is None:
+        method = "pgv"
+    else:
+        raise NotImplementedError
+
+    if method == "pgv":
+        C = np.rec.fromrecords(
+            [
+                -3.1355,
+                -0.4253,
+                0.8802,
+                -3.2971,
+                1.3502,
+                0.0313,
+                0.3719,
+                -0.1137,
+                0.0433,
+                0.1356,
+            ],
+            names="b0,b1,b2,b3,c0,c1,e0,e1,e2,p1",
+        )
+    else:
+        C = np.rec.fromrecords(
+            [2.6482, -0.2530, 0.8802, -3.2971, 1.3058, 0.0577, 0.6002],
+            names="b0,b1,b2,b3,c0,c1,d0",
+        )
+
+    # Equation 5
+    a0 = C.b0 + C.b1 * np.log(yield_coef)
+    if period_slide > 0.1:
+        a0 += (C.b2 + C.b3 * yield_coef) * np.log(period_slide / 0.1)
+
+    a1 = C.c0 + C.c1 * np.log(yield_coef)
+
+    if method == "pgv":
+        ln_disp = a0 + a1 * np.log(pgv)
+    else:
+        ln_disp = a0 + a1 * np.log(pga) + C.d0 * (mag - 6.5)
+
+    if method == "pgv":
+        p0 = C.e0
+        if pgv < 2:
+            p0 -= C.e1 * np.log(pgv / 2)
+        elif pgv > 50:
+            p0 += C.e2 * np.log(pgv / 50)
+
+        phi = p0
+        if yield_coef > 0.2:
+            phi += C.p1 * np.log(yield_coef / 0.2)
+
+        tau = 0.177
+        ln_std = np.sqrt(phi**2 + tau**2)
+    else:
+        ln_std = np.nan
+
+    return ln_disp, ln_std
+
+
+@dist_lognorm
+def calc_dam_period_pk19(height: float, direction: str = "transverse", **kwds):
+    if direction in ("lon", "longitudinal"):
+        a = -2.629
+        b = 0.377
+        ln_std = 0.464
+    elif direction in ("trans", "transverse"):
+        a = -2.685
+        b = 0.430
+        ln_std = 0.375
+    elif direction in ("vert", "vertical"):
+        a = -2.793
+        b = 0.283
+        ln_std = 0.456
+    else:
+        raise NotImplementedError
+
+    ln_period = a + b * np.log(height)
+
+    return ln_period, ln_std

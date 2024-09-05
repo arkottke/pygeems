@@ -33,3 +33,20 @@ def test_calc_damping_scaling_rea15(case):
 
     assert_allclose(ret.dsf, case["dsf"], rtol=0.01)
     assert_allclose(ret.ln_std, case["ln_std"], rtol=0.01)
+
+
+@pytest.fixture()
+def timeseries():
+    ts = pygeems.ground_motion.TimeSeries.read_at2(
+        FPATH_DATA / "RSN4863_CHUETSU_65036EW.AT2"
+    )
+    return ts
+
+
+def test_at2_time_step(timeseries):
+    assert_allclose(timeseries.time_step, 0.01)
+
+
+def test_at2_accels(timeseries):
+    assert_allclose(timeseries.accels.size, 6000)
+    assert_allclose(timeseries.accels[[0, -1]], [-0.2674464e-03, -0.4684600e-04])

@@ -1,8 +1,10 @@
 """Functions and classes for calculation of ground motion parameters."""
+
+import re
 from typing import Optional
 
 import numpy as np
-from numpy.typing import ArrayLike
+import numpy.typing as npt
 
 from . import FPATH_DATA
 from .utils import check_bounds
@@ -17,8 +19,8 @@ def calc_damping_scaling_rea15(
     mag: float,
     dist_rup: float,
     comp: str = "rotd50",
-    periods: Optional[ArrayLike] = None,
-) -> ArrayLike:
+    periods: Optional[npt.ArrayLike] = None,
+) -> npt.ArrayLike:
     """Compute the damping scaling proposed by Rezaeian et al. (2014).
 
     Parameters
@@ -145,7 +147,7 @@ def calc_aris_intensity_aea16(
     ln_std_psa_1s: Optional[float] = None,
     **kwargs,
 ):
-    """Abrahamson et al. (2016) Arias intensity model."""
+    """Arias intensity estimate from Abrahamson, Shi, and Yang (2016)."""
     # From Table 3.1
     # Value of c8 is provided after equation 3.7
     C = np.rec.fromrecords(
@@ -172,3 +174,92 @@ def calc_aris_intensity_aea16(
         raise NotImplementedError
 
     return ln_arias_int, ln_std
+
+
+class TimeSeries:
+    def __init__(self, time_step, accels, info=""):
+        self._time_step = time_step
+        self._accels = accels
+        self._info = info
+
+    @property
+    def info(self):
+        return self._info
+
+    @property
+    def time_step(self):
+        return self._time_step
+
+    @property
+    def accels(self):
+        return self._accels
+
+    @classmethod
+    def read_at2(cls, filename):
+        with open(filename) as fp:
+            next(fp)
+            info = next(fp).strip()
+            next(fp)
+            parts = [p for p in re.split("[ ,]", next(fp)) if p]
+            count = int(parts[1])
+            time_step = float(parts[3])
+            accels = np.array([p for l in fp for p in l.split()]).astype(float)
+        return cls(time_step, accels, info)
+
+
+# FIXME: Add
+# @dist_lognorm
+# def calc_conditional_pgv_ab19(
+#         mag,
+#         dist,
+#         v_s30,
+#
+#         **kwds
+# ):
+#     """Compute the PGV/PGA ratio from Abrahamson and Bhasin (2018).
+#
+#     """
+#
+#     if pga is not None:
+#         c_values = ()
+#     if psa_1s is not None:
+#
+#     else:
+#         C = np.rec.fromrecords(
+#             ()
+#         )
+#
+#
+#     ln_mean = (
+#         3.3 +
+#         0.53 * mag -
+#         0.14 * np.log(dist + 3) -
+#         0.32 * np.log(v_s30) - np.log(980)
+#     )
+#     ln_std = np.sqrt(0.45 ** 2 + (0.53 * 0.3) ** 2) * np.ones_like(mag)
+#     return ln_mean, ln_std
+
+
+def calc_pulse_proportion_hea12(
+    dist_rup: npt.ArrayLike, epsilon: npt.ArrayLike
+) -> npt.ArrayLike:
+    """Calculate the pulse proportion from Hayden et al. (2012).
+
+    Parameters
+    ----------
+    dist_rup : float or array_like
+        Closest distance to the fault rupture [km]
+    epsilon : float or array_like
+        Number of stanard deviations
+
+    Returns
+    -------
+    Proportion of records with pulse-like behavior
+
+    """
+
+    prop = np.exp(0.891 - 0.188 * dist_rup + 1.230 * epsilon) / (
+        1 + np.exp(0.981 - 0.188 * dist_rup + 1.230 * epsilon)
+    )
+
+    return prop

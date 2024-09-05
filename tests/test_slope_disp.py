@@ -1,13 +1,10 @@
-import pathlib
-
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
 import pygeems
 
-
-FPATH_DATA = pathlib.Path(__file__).parent / "data"
+from . import FPATH_DATA
 
 
 @pytest.mark.parametrize(
@@ -85,8 +82,9 @@ def test_calc_prob_disp_bt07(yield_coef, period_slide, psa_dts, expected):
     assert_allclose(calc, expected, atol=0.02, rtol=0.02)
 
 
-# Test values from Table 1 in BT07. Authors provided a range of values, which are
-# interpreted to be log-normally distributed. The median is computed and tested against
+# Test values from Table 1 in BT07. Authors provided a range of values, which
+# are interpreted to be log-normally distributed. The median is computed and
+# tested against
 @pytest.mark.parametrize(
     "yield_coef,period_slide,psa_dts,expected",
     [
@@ -213,3 +211,35 @@ def test_calc_disp_cr21(yield_coef, period_slide, height_ratio, pgv, expected):
     # Reported values are probability of no displacement
     # Limited number of digits in table make testing difficult
     assert_allclose(ret, expected, rtol=0.05)
+
+
+def test_ha19_trans_func():
+    ha19 = pygeems.slope_disp.HaleAbrahamson19(100, freq_nat=5.0)
+    np.testing.assert_allclose(ha19.shear_vel, 1500)
+
+    trans_func = ha19._calc_trans_func([0.1], 0.01)
+    np.testing.assert_allclose(trans_func, [1])
+
+
+# FIXME: Add test value
+def test_ha19_displacement():
+    # Acceleration data in g
+    ts = pygeems.ground_motion.TimeSeries.read_at2(
+        FPATH_DATA / "RSN4863_CHUETSU_65036EW.AT2"
+    )
+
+    ha19 = pygeems.slope_disp.HaleAbrahamson19(50, shear_vel=800)
+    disp = ha19(ts.time_step, ts.accels, 0.1)
+
+
+@pytest.mark.parametrize(
+    "pgv,pga,mag,expected",
+    # Test values selected from Figure 3.13
+    [
+        (10, None, None, 5.9),
+        (None, 0.1, 7, 6.1),
+    ],
+)
+def test_calc_disp_cr20(pgv, pga, mag, expected):
+    disp = pygeems.slope_disp.calc_disp_cr20(0.1, 0.6, pga, mag, pgv)
+    np.testing.assert_allclose(disp, expected, rtol=0.01)
