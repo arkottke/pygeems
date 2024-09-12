@@ -7,9 +7,7 @@ import numpy as np
 import numpy.typing as npt
 
 from . import FPATH_DATA
-from .utils import check_bounds
-from .utils import check_options
-from .utils import dist_lognorm
+from .utils import check_bounds, check_options, dist_lognorm
 
 _CACHE_REA15 = {}
 
@@ -142,9 +140,9 @@ def calc_aris_intensity_aea16(
     pga: float,
     psa_1s: float,
     hanging_wall: bool = False,
-    dist_jb: Optional[float] = None,
-    ln_std_pga: Optional[float] = None,
-    ln_std_psa_1s: Optional[float] = None,
+    dist_jb: float | None = None,
+    ln_std_pga: float | None = None,
+    ln_std_psa_1s: float | None = None,
     **kwargs,
 ):
     """Arias intensity estimate from Abrahamson, Shi, and Yang (2016)."""
@@ -263,3 +261,47 @@ def calc_pulse_proportion_hea12(
     )
 
     return prop
+
+
+@dist_lognorm
+def calc_site_atten_vhea11(v_s30: float | ArrayLike, **kwargs) -> float | np.ndarray:
+    r"""Site attenuation from Van Houtte et al. (2011).
+
+    Parameters
+    ----------
+    v_s30 : float | ArrayLike
+        time-average velocity in the top 30 m in m/s.
+    **kwargs
+        Passed to `dist_lognorm`
+
+    Returns
+    -------
+    float | np.ndarray
+        Predicted site attenuation (\kappa_0) in sec
+    """
+    ln_mean = 3.49 - 1.062 * np.log(v_s30)
+    ln_std = 0.55
+    return ln_mean, ln_std
+
+
+@dist_lognorm
+def calc_site_atten_xr21(v_s30: float | ArrayLike, **kwargs) -> float | np.ndarray:
+    r"""Site attenuation from Xu and Rathje (2021).
+
+    Parameters
+    ----------
+    v_s30 : float | ArrayLike
+        time-average velocity in the top 30 m in m/s.
+    **kwargs
+        Passed to `dist_lognorm`
+
+    Returns
+    -------
+    float | np.ndarray
+        Predicted site attenuation (\kappa_0) in sec
+
+    """
+    ln_vs30 = np.log(np.clip(v_s30, 155, 2000))
+    ln_mean = -0.18 * ln_vs30**2 + 1.816 * ln_vs30 - 7.38
+    ln_std = 0.3
+    return ln_mean, ln_std
