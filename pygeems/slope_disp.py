@@ -1,19 +1,20 @@
 """pyGEEMs: slope displacement functions and classes."""
 
 import collections
-from typing import Optional
 from typing import Union
 
+import numba
 import numpy as np
-from numpy.typing import ArrayLike
-
+import numpy.typing as npt
+import scipy.constants
+from scipy.integrate import cumulative_trapezoid
 from scipy.stats import norm
 
-from typing import Optional
+import pyrotd
 
 from .utils import dist_lognorm
 
-FloatOrArrayLike = Union[float, ArrayLike]
+FloatOrArrayLike = Union[float, npt.ArrayLike]
 
 
 class Coefficients(collections.abc.Mapping):
@@ -39,8 +40,8 @@ class Coefficients(collections.abc.Mapping):
 def calc_disp_rs08(
     yield_coef: float,
     pga: FloatOrArrayLike,
-    mag: Optional[float] = None,
-    pgv: Optional[float] = None,
+    mag: float | None = None,
+    pgv: float | None = None,
     **kwargs,
 ):
     """Rathje and Saygili (2008) slope displacement model.
@@ -118,8 +119,8 @@ def calc_disp_ra11(
     pga: float | npt.ArrayLike,
     period_slide: float,
     period_mean: float,
-    mag: Optional[float] = None,
-    pgv: Optional[float] = None,
+    mag: float | None = None,
+    pgv: float | None = None,
     **kwargs,
 ):
     """Rathje and Antonakos (2011) slope displacement model."""
@@ -326,9 +327,9 @@ def calc_disp_cr22(
     yield_coef: float,
     period_slide: float,
     height_ratio: float,
-    pgv: Optional[float] = None,
-    pga: Optional[float] = None,
-    mag: Optional[float] = None,
+    pgv: float | None = None,
+    pga: float | None = None,
+    mag: float | None = None,
     **kwds,
 ):
     """Displacement model from Cho and Rathje (2022)."""
@@ -465,7 +466,7 @@ def calc_prob_disp_bea17(
 
 
 @numba.jit(nopython=True)
-def _calc_block_velocity(time_step: float, accels: ArrayLike, yield_coef: float):
+def _calc_block_velocity(time_step: float, accels: npt.ArrayLike, yield_coef: float):
     """Compute the velocity of a sliding block.
 
     The calculation is adapted from Slammer's source code[1]_. However,
@@ -593,8 +594,8 @@ class HaleAbrahamson19:
     def __init__(
         self,
         height: float,
-        shear_vel: Optional[float] = None,
-        freq_nat: Optional[float] = None,
+        shear_vel: float | None = None,
+        freq_nat: float | None = None,
         nl_model: str = "darendeli",
     ):
         assert nl_model in self.NL_MODELS
@@ -703,9 +704,9 @@ class HaleAbrahamson19:
 def calc_disp_cr20(
     yield_coef: float,
     period_slide: float,
-    pga: Optional[float] = None,
-    mag: Optional[float] = None,
-    pgv: Optional[float] = None,
+    pga: float | None = None,
+    mag: float | None = None,
+    pgv: float | None = None,
 ):
     """Calculate the displacement predicted by Cho and Rathje (2020).
 

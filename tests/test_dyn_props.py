@@ -1,14 +1,13 @@
-
 import numpy as np
 
-from pygeems.dyn_props import *
+from pygeems.dyn_props import calc_mod_bulk, calc_mod_shear, calc_poissons_ratio
 
 
 def test_elastic_moduli():
     vel_shear = 2000
     poissons_ratio = 0.3
     dens = 2.3
-    mod_shear = dens * vel_shear ** 2
+    mod_shear = dens * vel_shear**2
 
     mod_bulk = calc_mod_bulk(mod_shear, poissons_ratio)
 

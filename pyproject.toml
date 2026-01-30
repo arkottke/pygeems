@@ -1,4 +1,61 @@
-# As per https://github.com/pypa/setuptools/blob/main/docs/userguide/quickstart.rst
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyGEEMs"
+version = "0.3.0"
+description = "Geotechnical earthquake engineering models implemented in Python."
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Albert R. Kottke", email = "albert.kottke@gmail.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "matplotlib",
+    "numba",
+    "numpy",
+    "pandas",
+    "pyrotd>=0.6.1",
+    "scipy",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-flake8",
+]
+dev = [
+    "black",
+    "flake8",
+    "pre-commit",
+    "pydocstyle",
+    "watchdog",
+    "twine",
+    "build",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"pygeems" = ["data/*"]
+
+[tool.pydocstyle]
+inherit = false
+convention = "numpy"
+match = "(?!test_).*\\.py"
+
+[tool.pytest.ini_options]
+addopts = "--verbose --flake8 --cov=pygeems --cov-report=html"
+testpaths = ["tests"]

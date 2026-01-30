@@ -1,7 +1,6 @@
 """Functions and classes for calculation of ground motion parameters."""
 
 import re
-from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -17,7 +16,7 @@ def calc_damping_scaling_rea15(
     mag: float,
     dist_rup: float,
     comp: str = "rotd50",
-    periods: Optional[npt.ArrayLike] = None,
+    periods: npt.ArrayLike | None = None,
 ) -> npt.ArrayLike:
     """Compute the damping scaling proposed by Rezaeian et al. (2014).
 
@@ -199,9 +198,9 @@ class TimeSeries:
             info = next(fp).strip()
             next(fp)
             parts = [p for p in re.split("[ ,]", next(fp)) if p]
-            count = int(parts[1])
+            _ = int(parts[1])
             time_step = float(parts[3])
-            accels = np.array([p for l in fp for p in l.split()]).astype(float)
+            accels = np.array([p for line in fp for p in line.split()]).astype(float)
         return cls(time_step, accels, info)
 
 
@@ -264,7 +263,9 @@ def calc_pulse_proportion_hea12(
 
 
 @dist_lognorm
-def calc_site_atten_vhea11(v_s30: float | ArrayLike, **kwargs) -> float | np.ndarray:
+def calc_site_atten_vhea11(
+    v_s30: float | npt.ArrayLike, **kwargs
+) -> float | np.ndarray:
     r"""Site attenuation from Van Houtte et al. (2011).
 
     Parameters
@@ -285,7 +286,7 @@ def calc_site_atten_vhea11(v_s30: float | ArrayLike, **kwargs) -> float | np.nda
 
 
 @dist_lognorm
-def calc_site_atten_xr21(v_s30: float | ArrayLike, **kwargs) -> float | np.ndarray:
+def calc_site_atten_xr21(v_s30: float | npt.ArrayLike, **kwargs) -> float | np.ndarray:
     r"""Site attenuation from Xu and Rathje (2021).
 
     Parameters

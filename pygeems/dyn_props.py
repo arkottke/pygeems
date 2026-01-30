@@ -225,7 +225,7 @@ def calc_vel_shear_bj97(depths_m: npt.ArrayLike, profile: str) -> npt.ArrayLike:
             depths_km, BJ97_DATA["depth_km"], BJ97_DATA["slow_spk"]
         )
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
     return vel_shear_kps * 1e3
 

@@ -112,9 +112,9 @@ def test_calc_block_displacement(invert, yield_coef, expected):
     accels = np.loadtxt(str(FPATH_DATA / "kobe-nis-000.dat"))
     yield_coef = yield_coef
 
-    disps, vels = pygeems.slope_disp.calc_rigid_disp(
-        time_step, accels, yield_coef, invert
-    )
+    disps = pygeems.slope_disp.calc_rigid_disp(time_step, accels, yield_coef, invert)[
+        "disps"
+    ]
     disp_max = disps[-1]
     # Large rtol because of slightly different implementations
     assert_allclose(disp_max, expected, rtol=0.04)
@@ -229,7 +229,7 @@ def test_ha19_displacement():
     )
 
     ha19 = pygeems.slope_disp.HaleAbrahamson19(50, shear_vel=800)
-    disp = ha19(ts.time_step, ts.accels, 0.1)
+    _ = ha19(ts.time_step, ts.accels, 0.1)
 
 
 @pytest.mark.parametrize(

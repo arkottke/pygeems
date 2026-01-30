@@ -50,12 +50,10 @@ lint:
 	pydocstyle pygeems/*.py
 
 test:
-	py.test --flake8 --cov-report html --cov=pygeems tests/
+	pytest
 
 coverage:
-	coverage run --source pygeems setup.py tests
-	coverage report -m
-	coverage html
+	pytest
 	$(BROWSER) htmlcov/index.html
 
 docs:
@@ -70,13 +68,12 @@ servedocs: docs
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 release: clean
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	python -m build
+	twine upload dist/*
 
 dist: clean
-	python setup.py sdist
-	python setup.py bdist_wheel
+	python -m build
 	ls -l dist
 
 install: clean
-	python setup.py install
+	pip install .
