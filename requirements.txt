@@ -5,4 +5,3 @@ numba
 # required by scipy
 numpy>=1.16.5
 scipy
-setuptools
